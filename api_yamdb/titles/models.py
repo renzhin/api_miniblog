@@ -14,25 +14,6 @@ class BaseModel(models.Model):
         abstract = True
 
 
-# class NameSlugModel(BaseModel):
-#     name = models.CharField(max_length=256, unique=True)
-#     slug = models.SlugField(unique=True)
-
-#     class Meta:
-#         abstract = True
-
-
-# class TextAutorModel(BaseModel):
-#     text = models.TextField()
-#     autor = models.ForeignKey(
-#         User, on_delete=models.CASCADE,
-#         related_name='review', blank=True, null=True
-#     )
-
-#     class Meta:
-#         abstract = True
-
-
 class Genre(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
@@ -78,7 +59,7 @@ class Review(BaseModel):
         User, on_delete=models.CASCADE,
         related_name='reviews'
     )
-    titile_id = models.ForeignKey(
+    title_id = models.ForeignKey(
         Title, on_delete=models.CASCADE,
         related_name='reviews'
     )
