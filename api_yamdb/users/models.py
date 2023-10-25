@@ -22,6 +22,12 @@ class MyUser(AbstractUser):
     #     validators=[username_validator],
     # )
     email = models.EmailField(unique=True)
+    password = models.CharField(
+        'Пароль',
+        max_length=128,
+        blank=True,
+        null=True,
+    )
     role = models.CharField(max_length=2, choices=ROLE_CHOICES, default=USER)
     bio = models.TextField(blank=True)
     # first_name = models.CharField(max_length=150, blank=True)
