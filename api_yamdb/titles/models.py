@@ -55,7 +55,7 @@ class Title(models.Model):
     year = models.IntegerField()
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
-        related_name='titles', blank=True, null=True
+        related_name='titles', null=True
     )
     genre = models.ManyToManyField(Genre, through='GenreTitle')
 
