@@ -1,8 +1,11 @@
-from rest_framework import serializers
 import datetime as dt
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
 
 from titles.models import Category, Genre, Title, GenreTitle, Comment, Review
 
+User = get_user_model()
 
 CHOICES = (
     ('1', '1'),
@@ -16,6 +19,13 @@ CHOICES = (
     ('9', '9'),
     ('10', '10'),
 )
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        exclude = ('id', )
 
 
 class CommentSerializer(serializers.ModelSerializer):

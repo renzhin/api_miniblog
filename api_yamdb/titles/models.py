@@ -45,7 +45,7 @@ class Title(models.Model):
 
 
 class GenreTitle(models.Model):
-    genre_id = models.ForeignKey(Genre, on_delete=models.SET_NULL)
+    genre_id = models.ForeignKey(Genre, on_delete=models.SET_NULL, null=True)
     title_id = models.ForeignKey(Title, on_delete=models.CASCADE)
 
     def str(self):
