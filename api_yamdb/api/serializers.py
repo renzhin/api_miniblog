@@ -58,6 +58,10 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         exclude = ('id', )
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -65,11 +69,22 @@ class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
         exclude = ('id', )
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    genre = GenreSerializer(many=True)
-    category = serializers.SlugRelatedField(slug_field='name')
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
+    )
     rating = serializers.SerializerMethodField()
 
     class Meta:
@@ -84,6 +99,11 @@ class TitleSerializer(serializers.ModelSerializer):
         if not (1000 < value <= year):
             raise serializers.ValidationError('Проверьте год создания!')
         return value
+
+
+class GetTitleSerializer(TitleSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
 
     def create(self, validated_data):
         genres = validated_data.pop('genre')
