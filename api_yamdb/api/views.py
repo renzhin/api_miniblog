@@ -1,17 +1,13 @@
 from rest_framework.views import APIView
-from rest_framework import viewsets, mixins, filters, status
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework import viewsets, mixins, generics, filters, status
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import SlidingToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Avg, F
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 
 from titles.models import Title, Genre, Category, Review
@@ -27,14 +23,22 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser,]
+    permission_classes = [IsAdminUser]
     # filter_backends = [filters.SearchFilter]
     # search_fields = ('username',)
     lookup_field = 'username'
 
 
+class UserProfileUpdateView(generics.UpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
 class APISignUpUser(APIView):
-    permission_classes = [AllowAny,]
+    permission_classes = [AllowAny]
     serializer_class = SignUpSerializer
 
     def post(self, request):
@@ -65,7 +69,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-    
+
         # Получите username и confirmation_code из сериализатора
         username = serializer.validated_data['username']
         confirmation_code = serializer.validated_data['confirmation_code']
