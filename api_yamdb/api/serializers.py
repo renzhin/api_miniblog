@@ -25,7 +25,45 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        exclude = ('id', )
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role',
+        )
+        lookup_field = 'username'
+
+        def validate_username(self, value):
+            if value == 'me':
+                raise serializers.ValidationError(
+                    'Нельзя зарегистрироваться под этим именем!'
+                )
+            return value
+
+
+class SignUpSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        max_length=150
+    )
+    email = serializers.EmailField(
+        max_length=254
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'email'
+        )
+
+        def validate_username(self, value):
+            if value == 'me':
+                raise serializers.ValidationError(
+                    'Нельзя зарегистрироваться под этим именем!'
+                )
+            return value
 
 
 class CommentSerializer(serializers.ModelSerializer):

@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from api.views import (TitleViewSet, GenreViewSet,
                        CategoryViewSet, UserViewSet,
-                       ReviewViewSet, CommentViewSet
+                       ReviewViewSet, CommentViewSet,
+                       APISignUpUser,
                        )
 
 app_name = 'api'
@@ -26,4 +27,5 @@ v1_router.register(
 
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
+    path('v1/auth/signup/', APISignUpUser.as_view())
 ]
