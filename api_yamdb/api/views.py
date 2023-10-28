@@ -1,22 +1,24 @@
+from rest_framework.views import APIView
 from rest_framework import viewsets, mixins, filters, status
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import SlidingToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Avg, F
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from rest_framework_simplejwt.tokens import SlidingToken
 from django.core.mail import send_mail
 
 from titles.models import Title, Genre, Category, Review
 from api.serializers import (
     SignUpSerializer, TitleSerializer, GetTitleSerializer, GenreSerializer,
-    CategorySerializer, UserSerializer, ReviewSerializer, CommentSerializer
+    CategorySerializer, UserSerializer, ReviewSerializer, CommentSerializer,
+    CustomTokenObtainSerializer
 )
 
 User = get_user_model()
@@ -57,12 +59,29 @@ class APISignUpUser(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class CustomToken(SlidingToken):
-    def check_user(self, user):
-        confirmation_code = self.payload.get('confirmation_code')
-        if confirmation_code:
-            return confirmation_code == user.confirmation_code
-        return False
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+    
+        # Получите username и confirmation_code из сериализатора
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
+
+        # Проверьте, существует ли пользователь с указанным username
+        user = User.objects.filter(username=username).first()
+
+        if user and user.confirmation_code == confirmation_code:
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            return Response({
+                'access': str(access_token),
+                'refresh': str(refresh),
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'detail': 'Неверные учетные данные'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class TitleViewSet(viewsets.ModelViewSet):

@@ -117,12 +117,9 @@ EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 
 REST_FRAMEWORK = {
 
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
-
-}
-
-REST_FRAMEWORK = {
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -131,13 +128,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
 
-
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    'SLIDING_TOKEN_LIFETIME': timedelta(days=7),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'ALGORITHM': 'HS256',
-    'TOKEN_CLASS': 'api.views.CustomToken',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Время жизни токена доступа
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),  # Время жизни скользящего токена
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=30),  # Время жизни скользящего токена
+    'SLIDING_TOKEN_REFRESH_LIFETIME_MULTIPLIER': 1.5,  # Множитель для обновления скользящего токена
 }

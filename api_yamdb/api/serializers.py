@@ -67,6 +67,17 @@ class SignUpSerializer(serializers.ModelSerializer):
             return value
 
 
+class CustomTokenObtainSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    confirmation_code = serializers.CharField()
+
+    def validate(self, attrs):
+        username = attrs.get("username")
+        confirmation_code = attrs.get("confirmation_code")
+
+        return attrs
+
+
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username',

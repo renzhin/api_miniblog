@@ -7,7 +7,7 @@ from rest_framework.routers import DefaultRouter
 from api.views import (TitleViewSet, GenreViewSet,
                        CategoryViewSet, UserViewSet,
                        ReviewViewSet, CommentViewSet,
-                       APISignUpUser,
+                       APISignUpUser, CustomTokenObtainPairView,
                        )
 
 app_name = 'api'
@@ -31,7 +31,6 @@ v1_router.register(
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
     path('v1/auth/signup/', APISignUpUser.as_view()),
-    path('api/v1/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/v1/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('v1/auth/token/', CustomTokenObtainPairView.as_view(), name='custom_token_obtain_pair'),
+    # path('v1/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 ]
