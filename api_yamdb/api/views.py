@@ -50,12 +50,14 @@ class APISignUpUser(APIView):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
 
     def get_serializer_class(self):
         if self.http_method_names == 'GET':
             return GetTitleSerializer
         return TitleSerializer
+
+    def get_queryset(self):
+        return Title.objects.all().annotate(rating=Avg(F('reviews__score')))
 
 
 class GenreViewSet(
