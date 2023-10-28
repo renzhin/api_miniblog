@@ -56,7 +56,6 @@ class MyUser(AbstractUser):
         max_length=150,
         blank=True,
     )
-    last_login = None
 
     class Meta:
         verbose_name = 'Пользователь'
