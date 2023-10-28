@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework import mixins
 from django.contrib.auth import get_user_model
+from django.db.models import Avg, F
 
 from titles.models import Title, Genre, Category, Review
 from api.serializers import (
@@ -18,12 +19,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
 
     def get_serializer_class(self):
         if self.http_method_names == 'GET':
             return GetTitleSerializer
         return TitleSerializer
+
+    def get_queryset(self):
+        return Title.objects.all().annotate(rating=Avg(F('reviews__score')))
 
 
 class GenreViewSet(
