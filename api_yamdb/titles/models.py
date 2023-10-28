@@ -40,12 +40,12 @@ class Category(models.Model):
 
 class Title(models.Model):
     name = models.CharField(max_length=256)
-    description = models.TextField()
     year = models.IntegerField()
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
         related_name='titles', null=True
     )
+    description = models.TextField()
     genre = models.ManyToManyField(Genre, through='GenreTitle')
 
     class Meta:

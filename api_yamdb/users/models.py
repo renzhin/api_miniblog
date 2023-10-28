@@ -31,23 +31,12 @@ class MyUser(AbstractUser):
         unique=True,
         max_length=254,
     )
-    password = models.CharField(
-        'Пароль',
-        max_length=128,
-        blank=True,
-        null=True,
-    )
     role = models.CharField(
         max_length=2,
         choices=ROLE_CHOICES,
         default=USER,
     )
     bio = models.TextField(blank=True)
-    confirmation_code = models.CharField(
-        'Проверочный код',
-        max_length=150,
-        blank=True,
-    )
     first_name = models.CharField(
         'Имя',
         max_length=150
@@ -56,6 +45,18 @@ class MyUser(AbstractUser):
         'Фамилия',
         max_length=150
     )
+    password = models.CharField(
+        'Пароль',
+        max_length=128,
+        blank=True,
+        null=True,
+    )
+    confirmation_code = models.CharField(
+        'Проверочный код',
+        max_length=150,
+        blank=True,
+    )
+    last_login = None
 
     class Meta:
         verbose_name = 'Пользователь'
