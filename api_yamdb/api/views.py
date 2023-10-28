@@ -6,6 +6,11 @@ from django.db.models import Avg, F
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from rest_framework_simplejwt.tokens import SlidingToken
 from django.core.mail import send_mail
 
 from titles.models import Title, Genre, Category, Review
@@ -40,6 +45,8 @@ class APISignUpUser(APIView):
             email=email
         )
         confirmation_code = default_token_generator.make_token(user)
+        user.confirmation_code = confirmation_code
+        user.save()
         send_mail(
             'Регистрация',
             f'Это ваш проверочный код: {confirmation_code}.',
@@ -48,6 +55,14 @@ class APISignUpUser(APIView):
             fail_silently=True
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CustomToken(SlidingToken):
+    def check_user(self, user):
+        confirmation_code = self.payload.get('confirmation_code')
+        if confirmation_code:
+            return confirmation_code == user.confirmation_code
+        return False
 
 
 class TitleViewSet(viewsets.ModelViewSet):
