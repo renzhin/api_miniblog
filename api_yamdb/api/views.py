@@ -16,6 +16,7 @@ from api.serializers import (
     CategorySerializer, UserSerializer, ReviewSerializer, CommentSerializer,
     CustomTokenObtainSerializer
 )
+from .permissions import IsAdminOrReadOnly, IsAuthenticatedOrReadOnlydAndAuthor
 
 User = get_user_model()
 
@@ -89,6 +90,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_serializer_class(self):
         if self.http_method_names == 'GET':
@@ -107,6 +110,7 @@ class GenreViewSet(
 ):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
 
 
@@ -118,11 +122,14 @@ class CategoryViewSet(
 ):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnlydAndAuthor]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_title(self):
         """Получение экземпляра Title по title_id."""
@@ -141,6 +148,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnlydAndAuthor]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_review(self):
         """Получение экземпляра Title по title_id."""

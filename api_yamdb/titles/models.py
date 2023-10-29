@@ -7,7 +7,7 @@ User = get_user_model()
 
 class BaseModel(models.Model):
     pub_date = models.DateTimeField(
-        'Дата добавления'
+        'Дата добавления', auto_now_add=True
     )
 
     class Meta:

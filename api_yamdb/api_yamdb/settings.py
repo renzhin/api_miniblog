@@ -129,7 +129,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Время жизни токена доступа
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=10),  # Время жизни токена доступа
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),  # Время жизни скользящего токена
     'SLIDING_TOKEN_LIFETIME': timedelta(days=30),  # Время жизни скользящего токена
     'SLIDING_TOKEN_REFRESH_LIFETIME_MULTIPLIER': 1.5,  # Множитель для обновления скользящего токена
