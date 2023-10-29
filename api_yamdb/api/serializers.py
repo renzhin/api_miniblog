@@ -95,19 +95,19 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-    score = serializers.ChoiceField(choices=CHOICES)
+    score = serializers.IntegerField(max_value=10, min_value=1)
 
     class Meta:
         fields = '__all__'
         model = Review
         read_only_fields = ('title_id', 'pub_date',)
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Review.objects,
-                fields=['author', 'title_id'],
-                message='Нельзя оставить 2 отзыва'
-            )
-        ]
+#        validators = [
+#            UniqueTogetherValidator(
+#                queryset=Review.objects.all(),
+#                fields=['author', 'title_id'],
+#                message='Нельзя оставить 2 отзыва'
+#            )
+#        ]
 
 
 class CategorySerializer(serializers.ModelSerializer):

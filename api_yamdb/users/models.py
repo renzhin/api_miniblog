@@ -5,9 +5,9 @@ from django.db import models
 
 class MyUser(AbstractUser):
 
-    USER = 'US'
-    MODERATOR = 'MD'
-    ADMIN = 'AD'
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
 
     ROLE_CHOICES = [
         (USER, 'Аутентифицированный пользователь'),
@@ -38,7 +38,7 @@ class MyUser(AbstractUser):
         null=True,
     )
     role = models.CharField(
-        max_length=2,
+        max_length=10,
         choices=ROLE_CHOICES,
         default=USER,
     )
