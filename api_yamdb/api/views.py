@@ -44,24 +44,31 @@ class APISignUpUser(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid()
-        username = serializer.validated_data['username']
-        email = serializer.validated_data['email']
-        user = User.objects.create(
-            username=username,
-            email=email
-        )
-        confirmation_code = default_token_generator.make_token(user)
-        user.confirmation_code = confirmation_code
-        user.save()
-        send_mail(
-            'Регистрация',
-            f'Это ваш проверочный код: {confirmation_code}.',
-            'yamdb@gmail.ru',
-            [email,],
-            fail_silently=True
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            username = serializer.validated_data.get('username')
+            email = serializer.validated_data.get('email')
+            
+            # Проверьте, что username и email не пустые
+            if username and email:
+                user = User.objects.create(
+                    username=username,
+                    email=email
+                )
+                confirmation_code = default_token_generator.make_token(user)
+                user.confirmation_code = confirmation_code
+                user.save()
+                send_mail(
+                    'Регистрация',
+                    f'Это ваш проверочный код: {confirmation_code}.',
+                    'yamdb@gmail.ru',
+                    [email,],
+                    fail_silently=True
+                )
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({'detail': 'Поле username и email должны быть заполнены'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
