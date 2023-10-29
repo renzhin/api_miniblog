@@ -3,6 +3,8 @@ import datetime as dt
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework.validators import UniqueTogetherValidator
+from django.core.validators import RegexValidator
+
 
 from titles.models import Category, Genre, Title, GenreTitle, Comment, Review
 
@@ -46,25 +48,24 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SignUpSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
-        max_length=150
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex=r'^([-\w]+)$',
+                message=' Буквы, цифры и символы @/./+/-/_',
+            ),
+        ]
     )
-    email = serializers.EmailField(
-        max_length=254
-    )
+    email = serializers.EmailField(max_length=254)
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError('Нельзя зарегистрироваться под этим именем!')
+        return value
 
     class Meta:
         model = User
-        fields = (
-            'username',
-            'email'
-        )
-
-        def validate_username(self, value):
-            if value == 'me':
-                raise serializers.ValidationError(
-                    'Нельзя зарегистрироваться под этим именем!'
-                )
-            return value
+        fields = ('username', 'email')
 
 
 class CustomTokenObtainSerializer(serializers.Serializer):
