@@ -82,7 +82,7 @@ class Review(BaseModel):
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        ordering = ('-id', )
+        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.text
@@ -102,7 +102,7 @@ class Comment(BaseModel):
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        ordering = ('-id', )
+        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.text
