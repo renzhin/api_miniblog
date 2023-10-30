@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
+from api.filtres import TitleFilter
 from titles.models import Title, Genre, Category, Review
 from api.serializers import (
     SignUpSerializer, TitleSerializer, GetTitleSerializer, GenreSerializer,
@@ -119,6 +120,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
+    filterset_class = TitleFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
