@@ -139,6 +139,8 @@ class GenreViewSet(
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name', )
 
 
 class CategoryViewSet(
@@ -151,6 +153,8 @@ class CategoryViewSet(
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name', )
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
