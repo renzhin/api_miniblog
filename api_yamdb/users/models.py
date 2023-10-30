@@ -66,3 +66,14 @@ class MyUser(AbstractUser):
                 name='unique_username_email'
             )
         ]
+
+    @property
+    def is_admin(self):
+        return self.is_staff or self.role == MyUser.ADMIN
+
+    @property
+    def is_moderator(self):
+        return self.role == MyUser.MODERATOR
+
+    def __str__(self):
+        return self.username

@@ -36,14 +36,40 @@ class UserSerializer(serializers.ModelSerializer):
             'bio',
             'role',
         )
-        lookup_field = 'username'
 
-        def validate_username(self, value):
-            if value == 'me':
-                raise serializers.ValidationError(
-                    'Нельзя зарегистрироваться под этим именем!'
-                )
-            return value
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        max_length=150,
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r'^([-\w]+)$',
+                message=' Буквы, цифры и символы @/./+/-/_',
+            ),
+        ]
+    )
+
+    email = serializers.EmailField(
+        max_length=254,
+        required=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ('username',
+                  'email',
+                  'first_name',
+                  'last_name',
+                  'bio',
+                  'role')
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Нельзя зарегистрироваться под этим именем!'
+            )
+        return value
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -60,7 +86,9 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         if value == 'me':
-            raise serializers.ValidationError('Нельзя зарегистрироваться под этим именем!')
+            raise serializers.ValidationError(
+                'Нельзя зарегистрироваться под этим именем!'
+            )
         return value
 
     class Meta:

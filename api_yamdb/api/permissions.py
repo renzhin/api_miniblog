@@ -7,6 +7,17 @@ from rest_framework.permissions import (
 LIST_ROLE = ['admin', 'moderator']
 
 
+class IsAdminPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_admin
+
+
+class IsAdminUserOrReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        return (request.method in SAFE_METHODS
+                or request.user.is_authenticated and request.user.is_admin)
+
+
 class IsAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         return (request.method in SAFE_METHODS or request.user.is_authenticated and request.user.role == 'admin')

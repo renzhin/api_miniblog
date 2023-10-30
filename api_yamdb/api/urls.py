@@ -31,8 +31,7 @@ v1_router.register(
 
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
-    path('v1/users/me/', UserProfileUpdateView.as_view(), name='user-profile-update'),
+    # path('v1/users/me/', UserProfileUpdateView.as_view(), name='user-profile-update'),
     path('v1/auth/signup/', APISignUpUser.as_view()),
-    path('v1/auth/token/', CustomTokenObtainPairView.as_view(), name='custom_token_obtain_pair'),
-    # path('v1/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('v1/auth/token/', CustomTokenObtainPairView.as_view()),
 ]
