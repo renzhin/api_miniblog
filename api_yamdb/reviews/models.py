@@ -1,4 +1,3 @@
-from django.db import models
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -74,7 +73,7 @@ class Review(BaseModel):
         User, on_delete=models.CASCADE,
         related_name='reviews'
     )
-    title_id = models.ForeignKey(
+    title = models.ForeignKey(
         Title, on_delete=models.CASCADE,
         related_name='reviews'
     )
@@ -83,6 +82,12 @@ class Review(BaseModel):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ('-pub_date', )
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='author_title_unique'
+            ),
+        ]
 
     def __str__(self):
         return self.text

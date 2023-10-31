@@ -1,27 +1,11 @@
 import datetime as dt
 
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from rest_framework.validators import UniqueTogetherValidator
-from django.core.validators import RegexValidator
+from rest_framework import serializers
 
-
-from titles.models import Category, Genre, Title, GenreTitle, Comment, Review
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 
 User = get_user_model()
-
-CHOICES = (
-    ('1', '1'),
-    ('2', '2'),
-    ('3', '3'),
-    ('4', '4'),
-    ('5', '5'),
-    ('6', '6'),
-    ('7', '7'),
-    ('8', '8'),
-    ('9', '9'),
-    ('10', '10'),
-)
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -99,19 +83,12 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Review
-        read_only_fields = ('title_id', 'pub_date',)
-#        validators = [
-#            UniqueTogetherValidator(
-#                queryset=Review.objects.all(),
-#                fields=['author', 'title_id'],
-#                message='Нельзя оставить 2 отзыва'
-#            )
-#        ]
+        read_only_fields = ('title', 'pub_date',)
 
     def validate(self, data):
         if Review.objects.filter(
             author=self.context['request'].user,
-            title_id=self.context['view'].kwargs.get('title_id')
+            title=self.context['view'].kwargs.get('title_id')
         ).exists() and self.context['request'].method == 'POST':
             raise serializers.ValidationError(
                 'Нельзя оставить два отзыва на одно произведение.')

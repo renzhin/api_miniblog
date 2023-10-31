@@ -1,5 +1,6 @@
-from django_filters.rest_framework import FilterSet, CharFilter, NumberFilter
-from titles.models import Title
+from django_filters.rest_framework import CharFilter, FilterSet, NumberFilter
+
+from reviews.models import Title
 
 
 class TitleFilter(FilterSet):

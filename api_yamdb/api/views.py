@@ -1,32 +1,29 @@
 from django.conf import settings
-from rest_framework.views import APIView
-from rest_framework import viewsets, mixins, generics, filters, status
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
-from django.db import IntegrityError
-from rest_framework.pagination import LimitOffsetPagination
-from django.db.models import Avg, F, Q
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db.models import Avg, F, Q
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filtres import TitleFilter
-from titles.models import Title, Genre, Category, Review
-from api.serializers import (
-    TitleSerializer, GetTitleSerializer, GenreSerializer,
-    CategorySerializer, UsersSerializer, UserCreateSerializer,
-    ReviewSerializer, CommentSerializer, TokenSerializer,
-    SignupSerializer  
-)
-from .permissions import (
-    IsAdminPermission, IsAdminUserOrReadOnly, IsAdminOrReadOnly, IsAuthenticatedOrReadOnlydAndAuthor
-)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, GetTitleSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleSerializer, TokenSerializer,
+                             UserCreateSerializer, UsersSerializer
+                             )
+from reviews.models import Category, Genre, Review, Title
+from .permissions import (IsAdminOrReadOnly, IsAdminPermission,
+                          IsAuthenticatedOrReadOnlydAndAuthor
+                          )
 
 User = get_user_model()
 
@@ -40,18 +37,32 @@ class SignUpView(APIView):
         username = request.data.get('username')
 
         if username == "me":
-            return Response("Имя пользователя 'me' запрещено.", status=status.HTTP_400_BAD_REQUEST)
+            return Response("Имя пользователя 'me' запрещено.",
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
 
-        existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
-        another_user1 = User.objects.filter(email=email).exclude(username=username).first()
-        another_user2 = User.objects.filter(username=username).exclude(email=email).first()
+        existing_user = User.objects.filter(
+            Q(email=email) | Q(username=username)
+        ).first()
+        another_user1 = User.objects.filter(
+            email=email
+        ).exclude(username=username).first()
+        another_user2 = User.objects.filter(
+            username=username
+        ).exclude(email=email).first()
         if another_user1:
-            return Response("Пользователь с таким email уже существует", status=status.HTTP_400_BAD_REQUEST)
+            return Response("Пользователь с таким email уже существует",
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
         if another_user2:
-            return Response("Пользователь с таким email уже существует", status=status.HTTP_400_BAD_REQUEST)
+            return Response("Пользователь с таким email уже существует",
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
 
         if existing_user:
-            confirmation_code = default_token_generator.make_token(existing_user)
+            confirmation_code = default_token_generator.make_token(
+                existing_user
+            )
             existing_user.confirmation_code = confirmation_code
             existing_user.save()
 
@@ -93,7 +104,10 @@ class SignUpView(APIView):
                     'email': user.email,
                 }, status=status.HTTP_200_OK)
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -151,7 +165,9 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
     def get_queryset(self):
-        return Title.objects.all().annotate(rating=Avg(F('reviews__score'))).order_by('name')
+        return Title.objects.all().annotate(
+            rating=Avg(F('reviews__score'))
+        ).order_by('name')
 
 
 class GenreViewSet(
@@ -199,7 +215,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Заполнение полей author и post."""
         title = self.get_title()
-        serializer.save(author=self.request.user, title_id=title)
+        serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
