@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework import viewsets, mixins, generics, filters, status
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -5,19 +6,22 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from django.db import IntegrityError
 from rest_framework.pagination import LimitOffsetPagination
-from django.db.models import Avg, F
+from django.db.models import Avg, F, Q
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filtres import TitleFilter
 from titles.models import Title, Genre, Category, Review
 from api.serializers import (
-    SignUpSerializer, TitleSerializer, GetTitleSerializer, GenreSerializer,
-    CategorySerializer, UserSerializer, UserCreateSerializer, ReviewSerializer,
-    CommentSerializer, CustomTokenObtainSerializer
+    TitleSerializer, GetTitleSerializer, GenreSerializer,
+    CategorySerializer, UsersSerializer, UserCreateSerializer,
+    ReviewSerializer, CommentSerializer, TokenSerializer
 )
 from .permissions import (
     IsAdminPermission, IsAdminUserOrReadOnly, IsAdminOrReadOnly, IsAuthenticatedOrReadOnlydAndAuthor
@@ -26,9 +30,59 @@ from .permissions import (
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class SignUpView(APIView):
+    '''
+    POST-запрос с email и username генерирует
+    письмо с кодом для получения токена.
+    '''
+    permission_classes = (AllowAny,)
+    serializer_class = UserCreateSerializer
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+
+    def post(self, request, *args, **kwargs):
+        """Создание пользователя И Отправка письма с кодом."""
+        serializer = UserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        username = serializer.validated_data['username']
+
+        # Проверяем, существует ли пользователь с таким email или username
+        existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
+
+        if existing_user:
+            # Если пользователь уже существует, генерируем код подтверждения
+            confirmation_code = default_token_generator.make_token(existing_user)
+            existing_user.confirmation_code = confirmation_code
+            existing_user.save()
+
+            send_mail(
+                subject='Код подтверждения',
+                message=f'Ваш код подтверждения: {confirmation_code}',
+                from_email=settings.AUTH_EMAIL,
+                recipient_list=(existing_user.email,),
+                fail_silently=False,
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # Если пользователь не существует, создаем нового пользователя
+            user, _ = User.objects.get_or_create(**serializer.validated_data)
+            confirmation_code = default_token_generator.make_token(user)
+            user.confirmation_code = confirmation_code
+            user.save()
+
+            send_mail(
+                subject='Код подтверждения',
+                message=f'Ваш код подтверждения: {confirmation_code}',
+                from_email=settings.AUTH_EMAIL,
+                recipient_list=(user.email,),
+                fail_silently=False,
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UsersViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UsersSerializer
     permission_classes = (IsAdminPermission,)
     filter_backends = (filters.SearchFilter,)
     lookup_field = 'username'
@@ -51,70 +105,23 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class UserProfileUpdateView(generics.UpdateAPIView):
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user
-
-
-class APISignUpUser(APIView):
-    permission_classes = [AllowAny]
-    serializer_class = SignUpSerializer
+class TokenView(APIView):
+    '''
+    POST-запрос с username и confirmation_code
+    возвращает JWT-токен.
+    '''
+    permission_classes = (AllowAny,)
 
     def post(self, request):
-        serializer = SignUpSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data.get('username')
-            email = serializer.validated_data.get('email')
-
-            # Проверьте, что username и email не пустые
-            if username and email:
-                user = User.objects.create(
-                    username=username,
-                    email=email
-                )
-                confirmation_code = default_token_generator.make_token(user)
-                user.confirmation_code = confirmation_code
-                user.save()
-                send_mail(
-                    'Регистрация',
-                    f'Это ваш проверочный код: {confirmation_code}.',
-                    'yamdb@gmail.ru',
-                    [email,],
-                    fail_silently=True
-                )
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response({'detail': 'Поле username и email должны быть заполнены'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        # Получите username и confirmation_code из сериализатора
-        username = serializer.validated_data['username']
-        confirmation_code = serializer.validated_data['confirmation_code']
-
-        # Проверьте, существует ли пользователь с указанным username
-        user = User.objects.filter(username=username).first()
-
-        if user and user.confirmation_code == confirmation_code:
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
-            return Response({
-                'access': str(access_token),
-                'refresh': str(refresh),
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({'detail': 'Неверные учетные данные'}, status=status.HTTP_401_UNAUTHORIZED)
+        username = serializer.data['username']
+        user = get_object_or_404(User, username=username)
+        confirmation_code = serializer.data['confirmation_code']
+        if not default_token_generator.check_token(user, confirmation_code):
+            raise ValidationError('Неверный код')
+        token = AccessToken.for_user(user)
+        return Response({'token': str(token)}, status=status.HTTP_200_OK)
 
 
 class TitleViewSet(viewsets.ModelViewSet):

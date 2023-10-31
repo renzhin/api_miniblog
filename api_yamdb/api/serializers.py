@@ -24,30 +24,20 @@ CHOICES = (
 )
 
 
-class UserSerializer(serializers.ModelSerializer):
+class TokenSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
 
     class Meta:
         model = User
-        fields = (
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'bio',
-            'role',
-        )
+        fields = ('username', 'confirmation_code')
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
+    username = serializers.RegexField(
+        regex=r'^[\w.@+-]+$',
         max_length=150,
-        required=True,
-        validators=[
-            RegexValidator(
-                regex=r'^([-\w]+)$',
-                message=' Буквы, цифры и символы @/./+/-/_',
-            ),
-        ]
+        required=True
     )
 
     email = serializers.EmailField(
@@ -67,44 +57,18 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
         if value == 'me':
             raise serializers.ValidationError(
-                'Нельзя зарегистрироваться под этим именем!'
+                'Имя пользователя "me" запрещено.'
             )
         return value
 
 
-class SignUpSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^([-\w]+)$',
-                message=' Буквы, цифры и символы @/./+/-/_',
-            ),
-        ]
-    )
-    email = serializers.EmailField(max_length=254)
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Нельзя зарегистрироваться под этим именем!'
-            )
-        return value
+class UsersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email')
-
-
-class CustomTokenObtainSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
-
-    def validate(self, attrs):
-        username = attrs.get("username")
-        confirmation_code = attrs.get("confirmation_code")
-
-        return attrs
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role',
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):

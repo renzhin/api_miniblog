@@ -1,3 +1,5 @@
+
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -113,8 +115,10 @@ AUTH_USER_MODEL = 'users.MyUser'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-
-EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp/email')
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+AUTH_EMAIL = 'auth@api_yamdb.com'
 
 REST_FRAMEWORK = {
 
@@ -129,8 +133,6 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=10),  # Время жизни токена доступа
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),  # Время жизни скользящего токена
-    'SLIDING_TOKEN_LIFETIME': timedelta(days=30),  # Время жизни скользящего токена
-    'SLIDING_TOKEN_REFRESH_LIFETIME_MULTIPLIER': 1.5,  # Множитель для обновления скользящего токена
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
