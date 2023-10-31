@@ -50,11 +50,13 @@ class MyUser(AbstractUser):
     )
     first_name = models.CharField(
         'Имя',
-        max_length=150
+        max_length=150,
+        blank=True,
     )
     last_name = models.CharField(
         'Фамилия',
-        max_length=150
+        max_length=150,
+        blank=True,
     )
 
     class Meta:
