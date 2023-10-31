@@ -44,22 +44,37 @@ class SignUpView(APIView):
         if username == "me":
             return Response("Имя пользователя 'me' запрещено.", status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user, _ = User.objects.get_or_create(username=username, email=email)
-        except IntegrityError:
-            return Response('Такой логин или email уже существуют', status=status.HTTP_400_BAD_REQUEST)
+        # Попытка найти существующего пользователя по email или username
+        existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
 
-        confirmation_code = default_token_generator.make_token(user)
-        user.confirmation_code = confirmation_code
-        user.save()
+        if existing_user:
+            # Если пользователь уже существует, отправить новый код подтверждения
+            confirmation_code = default_token_generator.make_token(existing_user)
+            existing_user.confirmation_code = confirmation_code
 
-        send_mail(
-            subject='Код подтверждения',
-            message=f'Ваш код подтверждения: {confirmation_code}',
-            from_email=settings.AUTH_EMAIL,
-            recipient_list=(user.email,),
-            fail_silently=False,
-        )
+            send_mail(
+                subject='Новый код подтверждения',
+                message=f'Ваш новый код подтверждения: {confirmation_code}',
+                from_email=settings.AUTH_EMAIL,
+                recipient_list=(existing_user.email,),
+                fail_silently=False,
+            )
+        else:
+            # Если пользователя с такими данными нет, создать нового пользователя
+            user = User(username=username, email=email)
+            user.save()
+
+            confirmation_code = default_token_generator.make_token(user)
+            user.confirmation_code = confirmation_code
+            user.save()
+
+            send_mail(
+                subject='Код подтверждения',
+                message=f'Ваш код подтверждения: {confirmation_code}',
+                from_email=settings.AUTH_EMAIL,
+                recipient_list=(user.email,),
+                fail_silently=False,
+            )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
