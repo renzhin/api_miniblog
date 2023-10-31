@@ -47,6 +47,9 @@ class SignUpView(APIView):
         email = serializer.validated_data['email']
         username = serializer.validated_data['username']
 
+        if username == "me":
+            return Response("Имя пользователя 'me' запрещено.", status=status.HTTP_400_BAD_REQUEST)
+
         # Проверяем, существует ли пользователь с таким email или username
         existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
 
