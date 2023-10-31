@@ -21,7 +21,8 @@ from titles.models import Title, Genre, Category, Review
 from api.serializers import (
     TitleSerializer, GetTitleSerializer, GenreSerializer,
     CategorySerializer, UsersSerializer, UserCreateSerializer,
-    ReviewSerializer, CommentSerializer, TokenSerializer
+    ReviewSerializer, CommentSerializer, TokenSerializer,
+    SignupSerializer  
 )
 from .permissions import (
     IsAdminPermission, IsAdminUserOrReadOnly, IsAdminOrReadOnly, IsAuthenticatedOrReadOnlydAndAuthor
@@ -36,12 +37,12 @@ class SignUpView(APIView):
     письмо с кодом для получения токена.
     '''
     permission_classes = (AllowAny,)
-    serializer_class = UserCreateSerializer
+    serializer_class = SignupSerializer
     queryset = User.objects.all()
 
     def post(self, request, *args, **kwargs):
         """Создание пользователя И Отправка письма с кодом."""
-        serializer = UserCreateSerializer(data=request.data)
+        serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         username = serializer.validated_data['username']

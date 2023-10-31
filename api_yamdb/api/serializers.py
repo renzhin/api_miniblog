@@ -62,6 +62,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+class SignupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+
 class UsersSerializer(serializers.ModelSerializer):
 
     class Meta:
