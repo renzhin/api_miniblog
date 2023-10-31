@@ -28,8 +28,22 @@ from .permissions import (IsAdminOrReadOnly, IsAdminPermission,
 User = get_user_model()
 
 
+def send_confirmation_email(user, message):
+    confirmation_code = default_token_generator.make_token(user)
+    user.confirmation_code = confirmation_code
+    user.save()
+
+    send_mail(
+        subject=message,
+        message=f'Ваш код подтверждения: {confirmation_code}',
+        from_email=settings.AUTH_EMAIL,
+        recipient_list=(user.email,),
+        fail_silently=False,
+    )
+
+
 class SignUpView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = [AllowAny]
     serializer_class = SignupSerializer
 
     def post(self, request, *args, **kwargs):
@@ -37,83 +51,55 @@ class SignUpView(APIView):
         username = request.data.get('username')
 
         if username == "me":
-            return Response("Имя пользователя 'me' запрещено.",
-                            status=status.HTTP_400_BAD_REQUEST
-                            )
+            return Response(
+                "Имя пользователя 'me' запрещено.",
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         existing_user = User.objects.filter(
             Q(email=email) | Q(username=username)
         ).first()
-        another_user1 = User.objects.filter(
-            email=email
-        ).exclude(username=username).first()
-        another_user2 = User.objects.filter(
-            username=username
-        ).exclude(email=email).first()
-        if another_user1:
-            return Response("Пользователь с таким email уже существует",
-                            status=status.HTTP_400_BAD_REQUEST
-                            )
-        if another_user2:
-            return Response("Пользователь с таким email уже существует",
-                            status=status.HTTP_400_BAD_REQUEST
-                            )
+        another_user1 = (
+            User.objects.filter(email=email).exclude(username=username).first()
+        )
+        another_user2 = (
+            User.objects.filter(username=username).exclude(email=email).first()
+        )
+
+        if another_user1 or another_user2:
+            return Response(
+                "Пользователь с таким email уже существует",
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if existing_user:
-            confirmation_code = default_token_generator.make_token(
-                existing_user
+            send_confirmation_email(existing_user, 'Новый код подтверждения')
+            return Response(
+                {
+                    'username': existing_user.username,
+                    'email': existing_user.email
+                },
+                status=status.HTTP_200_OK
             )
-            existing_user.confirmation_code = confirmation_code
-            existing_user.save()
-
-            send_mail(
-                subject='Новый код подтверждения',
-                message=f'Ваш новый код подтверждения: {confirmation_code}',
-                from_email=settings.AUTH_EMAIL,
-                recipient_list=(existing_user.email,),
-                fail_silently=False,
-            )
-
-            # Возвращаем данные существующего пользователя
-            return Response({
-                'username': existing_user.username,
-                'email': existing_user.email,
-            }, status=status.HTTP_200_OK)
-
         else:
             serializer = SignupSerializer(data=request.data)
             if serializer.is_valid():
                 user = User(username=username, email=email)
                 user.save()
-
-                confirmation_code = default_token_generator.make_token(user)
-                user.confirmation_code = confirmation_code
-                user.save()
-
-                send_mail(
-                    subject='Код подтверждения',
-                    message=f'Ваш код подтверждения: {confirmation_code}',
-                    from_email=settings.AUTH_EMAIL,
-                    recipient_list=(user.email,),
-                    fail_silently=False,
-                )
-
-                # Возвращаем данные нового пользователя
-                return Response({
-                    'username': user.username,
-                    'email': user.email,
-                }, status=status.HTTP_200_OK)
+                send_confirmation_email(user, 'Код подтверждения')
+                return Response(
+                    {'username': user.username, 'email': user.email},
+                    status=status.HTTP_200_OK)
             else:
                 return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
                 )
 
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    permission_classes = (IsAdminPermission,)
+    permission_classes = [IsAdminPermission]
     filter_backends = (filters.SearchFilter,)
     lookup_field = 'username'
     search_fields = ('username',)
@@ -136,10 +122,6 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class TokenView(APIView):
-    '''
-    POST-запрос с username и confirmation_code
-    возвращает JWT-токен.
-    '''
     permission_classes = (AllowAny,)
 
     def post(self, request):
