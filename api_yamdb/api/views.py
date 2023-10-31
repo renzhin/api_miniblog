@@ -33,24 +33,25 @@ User = get_user_model()
 
 class SignUpView(APIView):
     permission_classes = (AllowAny,)
-    serializer_class = SignupSerializer  # Используйте новый сериализатор
+    serializer_class = SignupSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = SignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        username = serializer.validated_data['username']
+        email = request.data.get('email')
+        username = request.data.get('username')
 
         if username == "me":
             return Response("Имя пользователя 'me' запрещено.", status=status.HTTP_400_BAD_REQUEST)
 
-        # Попытка найти существующего пользователя по email или username
         existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
+        another_user = User.objects.filter(email=email).exclude(username=username).first()
+
+        if another_user:
+            return Response("Пользователь с таким email уже существует", status=status.HTTP_400_BAD_REQUEST)
 
         if existing_user:
-            # Если пользователь уже существует, отправить новый код подтверждения
             confirmation_code = default_token_generator.make_token(existing_user)
             existing_user.confirmation_code = confirmation_code
+            existing_user.save()
 
             send_mail(
                 subject='Новый код подтверждения',
@@ -59,23 +60,38 @@ class SignUpView(APIView):
                 recipient_list=(existing_user.email,),
                 fail_silently=False,
             )
+
+            # Возвращаем данные существующего пользователя
+            return Response({
+                'username': existing_user.username,
+                'email': existing_user.email,
+            }, status=status.HTTP_200_OK)
+
         else:
-            # Если пользователя с такими данными нет, создать нового пользователя
-            user = User(username=username, email=email)
-            user.save()
+            serializer = SignupSerializer(data=request.data)
+            if serializer.is_valid():
+                user = User(username=username, email=email)
+                user.save()
 
-            confirmation_code = default_token_generator.make_token(user)
-            user.confirmation_code = confirmation_code
-            user.save()
+                confirmation_code = default_token_generator.make_token(user)
+                user.confirmation_code = confirmation_code
+                user.save()
 
-            send_mail(
-                subject='Код подтверждения',
-                message=f'Ваш код подтверждения: {confirmation_code}',
-                from_email=settings.AUTH_EMAIL,
-                recipient_list=(user.email,),
-                fail_silently=False,
-            )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+                send_mail(
+                    subject='Код подтверждения',
+                    message=f'Ваш код подтверждения: {confirmation_code}',
+                    from_email=settings.AUTH_EMAIL,
+                    recipient_list=(user.email,),
+                    fail_silently=False,
+                )
+
+                # Возвращаем данные нового пользователя
+                return Response({
+                    'username': user.username,
+                    'email': user.email,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UsersViewSet(viewsets.ModelViewSet):
