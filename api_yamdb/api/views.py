@@ -43,9 +43,11 @@ class SignUpView(APIView):
             return Response("Имя пользователя 'me' запрещено.", status=status.HTTP_400_BAD_REQUEST)
 
         existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
-        another_user = User.objects.filter(email=email).exclude(username=username).first()
-
-        if another_user:
+        another_user1 = User.objects.filter(email=email).exclude(username=username).first()
+        another_user2 = User.objects.filter(username=username).exclude(email=email).first()
+        if another_user1:
+            return Response("Пользователь с таким email уже существует", status=status.HTTP_400_BAD_REQUEST)
+        if another_user2:
             return Response("Пользователь с таким email уже существует", status=status.HTTP_400_BAD_REQUEST)
 
         if existing_user:
