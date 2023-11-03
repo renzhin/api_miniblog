@@ -86,12 +86,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ('title', 'pub_date',)
 
     def validate(self, data):
-        if Review.objects.filter(
-            author=self.context['request'].user,
-            title=self.context['view'].kwargs.get('title_id')
-        ).exists() and self.context['request'].method == 'POST':
-            raise serializers.ValidationError(
-                'Нельзя оставить два отзыва на одно произведение.')
+        if self.context['request'].method == 'POST':
+            if Review.objects.filter(
+                author=self.context['request'].user,
+                title=self.context['view'].kwargs.get('title_id')
+            ).exists():
+                raise serializers.ValidationError(
+                    'Нельзя оставить два отзыва на одно произведение.'
+                )
         return data
 
 
