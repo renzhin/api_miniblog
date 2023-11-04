@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django.db.models import Avg, F, Q
+from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
@@ -55,6 +55,7 @@ class SignUpView(APIView):
                 "Имя пользователя 'me' запрещено.",
                 status=status.HTTP_400_BAD_REQUEST
             )
+
         user = User.objects.filter(username=username, email=email)
         if user.exists():
             send_confirmation_email(user, 'Новый код подтверждения')
@@ -64,6 +65,16 @@ class SignUpView(APIView):
                     'email': email
                 },
                 status=status.HTTP_200_OK
+            )
+        if User.objects.filter(username=username).exists():
+            return Response(
+                "Пользователь с таким именем ужe существует.",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if User.objects.filter(email=email).exists():
+            return Response(
+                "Пользователь с таким email ужу существует.",
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = SignupSerializer(data=request.data)
