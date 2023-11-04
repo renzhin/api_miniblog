@@ -55,45 +55,28 @@ class SignUpView(APIView):
                 "Имя пользователя 'me' запрещено.",
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        existing_user = User.objects.filter(
-            Q(email=email) | Q(username=username)
-        ).first()
-        another_user1 = (
-            User.objects.filter(email=email).exclude(username=username).first()
-        )
-        another_user2 = (
-            User.objects.filter(username=username).exclude(email=email).first()
-        )
-
-        if another_user1 or another_user2:
-            return Response(
-                "Пользователь с таким email уже существует",
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if existing_user:
-            send_confirmation_email(existing_user, 'Новый код подтверждения')
+        user = User.objects.filter(username=username, email=email)
+        if user.exists():
+            send_confirmation_email(user, 'Новый код подтверждения')
             return Response(
                 {
-                    'username': existing_user.username,
-                    'email': existing_user.email
+                    'username': username,
+                    'email': email
                 },
                 status=status.HTTP_200_OK
             )
-        else:
-            serializer = SignupSerializer(data=request.data)
-            if serializer.is_valid():
-                user = User(username=username, email=email)
-                user.save()
-                send_confirmation_email(user, 'Код подтверждения')
-                return Response(
-                    {'username': user.username, 'email': user.email},
-                    status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
+
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            user = User(username=username, email=email)
+            user.save()
+            send_confirmation_email(user, 'Код подтверждения')
+            return Response(
+                {'username': user.username, 'email': user.email},
+                status=status.HTTP_200_OK)
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class UsersViewSet(viewsets.ModelViewSet):
