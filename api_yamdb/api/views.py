@@ -1,7 +1,5 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from django.db.models import Avg, F, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
@@ -35,20 +33,6 @@ from api.serializers import (
 from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
-
-
-def send_confirmation_email(user, message):
-    confirmation_code = default_token_generator.make_token(user)
-    user.confirmation_code = confirmation_code
-    user.save()
-
-    send_mail(
-        subject=message,
-        message=f'Ваш код подтверждения: {confirmation_code}',
-        from_email=settings.AUTH_EMAIL,
-        recipient_list=(user.email,),
-        fail_silently=False,
-    )
 
 
 class SignUpView(APIView):
