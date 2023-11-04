@@ -1,9 +1,8 @@
-import datetime as dt
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.validators import validate_me, username_validator
 
 User = get_user_model()
 
@@ -18,10 +17,10 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    username = serializers.RegexField(
-        regex=r'^[\w.@+-]+$',
+    username = serializers.CharField(
         max_length=150,
-        required=True
+        required=True,
+        validators=[validate_me, username_validator]
     )
 
     email = serializers.EmailField(
@@ -31,19 +30,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username',
-                  'email',
-                  'first_name',
-                  'last_name',
-                  'bio',
-                  'role')
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Имя пользователя "me" запрещено.'
-            )
-        return value
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        )
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -57,7 +51,12 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'username', 'email', 'first_name', 'last_name', 'bio', 'role',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role',
         )
 
 
@@ -86,12 +85,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ('title', 'pub_date',)
 
     def validate(self, data):
-        if Review.objects.filter(
-            author=self.context['request'].user,
-            title=self.context['view'].kwargs.get('title_id')
-        ).exists() and self.context['request'].method == 'POST':
-            raise serializers.ValidationError(
-                'Нельзя оставить два отзыва на одно произведение.')
+        if self.context['request'].method == 'POST':
+            if Review.objects.filter(
+                author=self.context['request'].user,
+                title=self.context['view'].kwargs.get('title_id')
+            ).exists():
+                raise serializers.ValidationError(
+                    'Нельзя оставить два отзыва на одно произведение.'
+                )
         return data
 
 
@@ -117,13 +118,18 @@ class GenreSerializer(serializers.ModelSerializer):
         }
 
 
+class CategoryGenreField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        return {'name': value.name, 'slug': value.slug}
+
+
 class TitleSerializer(serializers.ModelSerializer):
-    genre = serializers.SlugRelatedField(
+    genre = CategoryGenreField(
         slug_field='slug',
         queryset=Genre.objects.all(),
         many=True
     )
-    category = serializers.SlugRelatedField(
+    category = CategoryGenreField(
         slug_field='slug',
         queryset=Category.objects.all()
     )
@@ -131,33 +137,17 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id',
-                  'name',
-                  'year',
-                  'rating',
-                  'description',
-                  'genre',
-                  'category'
-                  )
-
-    def validate_year(self, value):
-        year = dt.date.today().year
-        if not (1000 < value <= year):
-            raise serializers.ValidationError('Проверьте год создания!')
-        return value
+        fields = (
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category'
+        )
 
 
 class GetTitleSerializer(TitleSerializer):
-    genre = GenreSerializer(many=True)
-    category = CategorySerializer()
-
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
-        title = Title.objects.create(**validated_data)
-
-        for genre in genres:
-            current_genre, status = Genre.objects.get_or_create(
-                **genre)
-            GenreTitle.objects.create(
-                genre_id=current_genre, title_id=title)
-        return title
+    genre = GenreSerializer(read_only=True, many=True)
+    category = CategorySerializer(read_only=True)

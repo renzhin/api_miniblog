@@ -1,10 +1,9 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
-from django.db.models import Avg, F, Q
+from django.db import IntegrityError
+from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
@@ -14,86 +13,52 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filtres import TitleFilter
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, GetTitleSerializer,
-                             ReviewSerializer, SignupSerializer,
-                             TitleSerializer, TokenSerializer,
-                             UserCreateSerializer, UsersSerializer
-                             )
+from api.mixins import CategoryGenreMixin
+from api.permissions import (
+    IsAdminOrReadOnly,
+    IsAdminPermission,
+    IsAuthenticatedOrReadOnlydAndAuthor
+)
+from api.serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    GetTitleSerializer,
+    ReviewSerializer,
+    TitleSerializer,
+    TokenSerializer,
+    UserCreateSerializer,
+    UsersSerializer
+)
+from api.utils import send_confirmation_email
 from reviews.models import Category, Genre, Review, Title
-from .permissions import (IsAdminOrReadOnly, IsAdminPermission,
-                          IsAuthenticatedOrReadOnlydAndAuthor
-                          )
 
 User = get_user_model()
 
 
-def send_confirmation_email(user, message):
-    confirmation_code = default_token_generator.make_token(user)
-    user.confirmation_code = confirmation_code
-    user.save()
-
-    send_mail(
-        subject=message,
-        message=f'Ваш код подтверждения: {confirmation_code}',
-        from_email=settings.AUTH_EMAIL,
-        recipient_list=(user.email,),
-        fail_silently=False,
-    )
-
-
 class SignUpView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = SignupSerializer
+    serializer_class = UserCreateSerializer
+    queryset = User.objects.all()
 
     def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        username = request.data.get('username')
-
-        if username == "me":
+        """Создание пользователя И Отправка письма с кодом."""
+        serializer = UserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user, _ = User.objects.get_or_create(
+                **serializer.validated_data)
+        except IntegrityError:
             return Response(
-                "Имя пользователя 'me' запрещено.",
+                'Такой логин или email уже существуют',
                 status=status.HTTP_400_BAD_REQUEST
             )
+        confirmation_code = default_token_generator.make_token(user)
+        user.confirmation_code = confirmation_code
+        user.save()
 
-        existing_user = User.objects.filter(
-            Q(email=email) | Q(username=username)
-        ).first()
-        another_user1 = (
-            User.objects.filter(email=email).exclude(username=username).first()
-        )
-        another_user2 = (
-            User.objects.filter(username=username).exclude(email=email).first()
-        )
-
-        if another_user1 or another_user2:
-            return Response(
-                "Пользователь с таким email уже существует",
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if existing_user:
-            send_confirmation_email(existing_user, 'Новый код подтверждения')
-            return Response(
-                {
-                    'username': existing_user.username,
-                    'email': existing_user.email
-                },
-                status=status.HTTP_200_OK
-            )
-        else:
-            serializer = SignupSerializer(data=request.data)
-            if serializer.is_valid():
-                user = User(username=username, email=email)
-                user.save()
-                send_confirmation_email(user, 'Код подтверждения')
-                return Response(
-                    {'username': user.username, 'email': user.email},
-                    status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
+        send_confirmation_email(user, 'Новый код подтверждения')
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -142,7 +107,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.action in ('list', 'retrieve'):
             return GetTitleSerializer
         return TitleSerializer
 
@@ -152,32 +117,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         ).order_by('name')
 
 
-class GenreViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
+class GenreViewSet(CategoryGenreMixin):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAdminOrReadOnly]
-    lookup_field = 'slug'
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name', )
 
 
-class CategoryViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
+class CategoryViewSet(CategoryGenreMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
-    lookup_field = 'slug'
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name', )
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
