@@ -30,6 +30,7 @@ from api.serializers import (
     UserCreateSerializer,
     UsersSerializer
 )
+from api.utils import send_confirmation_email
 from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
