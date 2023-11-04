@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from api_yamdb.settings import LENGHT_NNAME
+
 User = get_user_model()
 
 
@@ -14,7 +16,7 @@ class BaseModel(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=LENGHT_NNAME)
     slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
@@ -27,7 +29,7 @@ class Genre(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=LENGHT_NNAME)
     slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
@@ -40,7 +42,7 @@ class Category(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=LENGHT_NNAME)
     description = models.TextField()
     year = models.IntegerField()
     category = models.ForeignKey(

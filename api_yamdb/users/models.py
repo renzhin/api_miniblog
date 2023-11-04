@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from api_yamdb.settings import LENGHT_USER_FIELDS
-
 from reviews.validators import username_validator
 
 

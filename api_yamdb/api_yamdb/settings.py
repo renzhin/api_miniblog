@@ -7,6 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Constant User model fields
 LENGHT_USER_FIELDS = 150
+# Constant Genre Category Title model fields
+LENGHT_NNAME = 256
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs'
