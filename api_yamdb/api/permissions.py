@@ -29,7 +29,7 @@ class IsAdminOrReadOnly(BasePermission):
 
 
 class IsAuthenticatedOrReadOnlydAndAuthor(IsAuthenticatedOrReadOnly):
-    message = 'Данное дейтвие вам не зазрешено!'
+    message = 'Данное дейтвие вам не разрешено!'
 
     def has_object_permission(self, request, view, obj):
         """Определяем условие object_permission(автор=юзер or staff)."""
