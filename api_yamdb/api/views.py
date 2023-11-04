@@ -75,19 +75,18 @@ class SignUpView(APIView):
                 },
                 status=status.HTTP_200_OK
             )
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            user = User(username=username, email=email)
+            user.save()
+            send_confirmation_email(user, 'Код подтверждения')
+            return Response(
+                {'username': user.username, 'email': user.email},
+                status=status.HTTP_200_OK)
         else:
-            serializer = SignupSerializer(data=request.data)
-            if serializer.is_valid():
-                user = User(username=username, email=email)
-                user.save()
-                send_confirmation_email(user, 'Код подтверждения')
-                return Response(
-                    {'username': user.username, 'email': user.email},
-                    status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class UsersViewSet(viewsets.ModelViewSet):
