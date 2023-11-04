@@ -1,8 +1,9 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
 from django.db import models
 
 from api_yamdb.settings import LENGHT_USER_FIELDS
+
+from reviews.validators import username_validator
 
 
 class MyUser(AbstractUser):
@@ -21,12 +22,7 @@ class MyUser(AbstractUser):
         'Имя пользователя',
         max_length=LENGHT_USER_FIELDS,
         unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^([-\w]+)$',
-                message=' Буквы, цифры и символы @/./+/-/_',
-            ),
-        ]
+        validators=[username_validator]
     )
     email = models.EmailField(
         'Электронная почта',

@@ -1,9 +1,8 @@
-import datetime as dt
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.validators import validate_me, username_validator
 
 User = get_user_model()
 
@@ -18,10 +17,10 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    username = serializers.RegexField(
-        regex=r'^[\w.@+-]+$',
+    username = serializers.CharField(
         max_length=150,
-        required=True
+        required=True,
+        validators=[validate_me, username_validator]
     )
 
     email = serializers.EmailField(
@@ -39,13 +38,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'bio',
             'role'
         )
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Имя пользователя "me" запрещено.'
-            )
-        return value
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -154,12 +146,6 @@ class TitleSerializer(serializers.ModelSerializer):
             'genre',
             'category'
         )
-
-    def validate_year(self, value):
-        year = dt.date.today().year
-        if not (1000 < value <= year):
-            raise serializers.ValidationError('Проверьте год создания!')
-        return value
 
 
 class GetTitleSerializer(TitleSerializer):
